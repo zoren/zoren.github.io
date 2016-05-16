@@ -82,11 +82,11 @@ function clipRays(rays, walls) {
     return rays.map(function (r) { return clipRay(r, walls); }).filter(function (r) { return r != null; });
 }
 var View = (function () {
-    function View(ctx, walls, width, height) {
+    function View(ctx, walls) {
         this.ctx = ctx;
         this.walls = walls;
-        this.width = width;
-        this.height = height;
+        this.width = ctx.canvas.width;
+        this.height = ctx.canvas.height;
         this.renderWalls();
     }
     View.prototype.renderWalls = function () {
@@ -164,11 +164,8 @@ var walls = [
 ];
 function exec() {
     var canvas = document.getElementById("theCanvas");
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    document.body.appendChild(canvas);
     var ctx = canvas.getContext("2d");
-    var view = new View(ctx, walls, window.innerWidth, window.innerHeight);
+    var view = new View(ctx, walls);
     canvas.onmousemove = function (e) {
         var rect = canvas.getBoundingClientRect();
         view.render(e.clientX - rect.left, e.clientY - rect.top);
