@@ -82,11 +82,11 @@ function clipRays(rays, walls) {
     return rays.map(function (r) { return clipRay(r, walls); }).filter(function (r) { return r != null; });
 }
 var View = (function () {
-    function View(ctx, walls) {
+    function View(ctx) {
         this.ctx = ctx;
-        this.walls = walls;
         this.width = ctx.canvas.width;
         this.height = ctx.canvas.height;
+        this.walls = [];
         this.renderWalls();
     }
     View.prototype.renderWalls = function () {
@@ -133,8 +133,8 @@ var View = (function () {
     View.prototype.renderRays = function (ray_x, ray_y) {
         var ray_pos_screen = new Point(ray_x, ray_y);
         var ray_pos = this.fromScreen(ray_pos_screen);
-        var rays = toRaysWalls(ray_pos, walls);
-        var clippedRays = clipRays(rays, walls);
+        var rays = toRaysWalls(ray_pos, this.walls);
+        var clippedRays = clipRays(rays, this.walls);
         clippedRays.sort(function (x, y) { return x.vector.angle - y.vector.angle; });
         for (var i = 0; i < clippedRays.length; i++) {
             var r1 = clippedRays[i];
@@ -145,8 +145,11 @@ var View = (function () {
     View.prototype.render = function (ray_x, ray_y) {
         this.ctx.clearRect(0, 0, this.width, this.height);
         this.renderRays(ray_x, ray_y);
-        this.renderRay(ray_x, ray_y);
         this.renderWalls();
+        this.renderRay(ray_x, ray_y);
+    };
+    View.prototype.addWall = function (wall) {
+        this.walls.push(wall);
     };
     return View;
 }());
@@ -165,10 +168,24 @@ var walls = [
 function exec() {
     var canvas = document.getElementById("theCanvas");
     var ctx = canvas.getContext("2d");
-    var view = new View(ctx, walls);
+    var view = new View(ctx);
+    walls.forEach(function (w) { return view.addWall(w); });
+    view.render(100, 100);
     canvas.onmousemove = function (e) {
         var rect = canvas.getBoundingClientRect();
         view.render(e.clientX - rect.left, e.clientY - rect.top);
+    };
+    var p = null;
+    canvas.onmousedown = function (e) {
+        if (p != null) {
+            var p2 = new Point(e.clientX, e.clientY);
+            var l = Line.pointsToLine(view.fromScreen(p), view.fromScreen(p2));
+            view.addWall(l);
+            p = null;
+        }
+        else {
+            p = new Point(e.clientX, e.clientY);
+        }
     };
 }
 exec();
