@@ -20,22 +20,23 @@
 
       function initMap() {
         var map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 12,
-          center: {lat: 55.68, lng: 12.54},
+          zoom: 1,
+//          center: {lat: 55.68, lng: 12.54},
+          center: {lat: 0, lng: 0},
           mapTypeId: google.maps.MapTypeId.MAP
         });
 
         // The custom USGSOverlay object contains the USGS image,
         // the bounds of the image, and a reference to the map.
 
-        const latinc = 1/1000;
-        const longinc = 1/500;
+        const latinc = 1/2;
+        const longinc = 1;
 
-        const initialLat = 55.60;
-        const initialLong = 12.45;
+        const initialLat = 0;
+        const initialLong = 0;
 
-        for(var i = 0;i<30*5;i++){
-          for(var j = 0;j<20*5;j++){
+        for(var i = 0;i<170;i++){
+          for(var j = 0;j<20;j++){
             var bounds = {
               north: initialLat+(i*latinc),
               west:  initialLong+(j*longinc),
