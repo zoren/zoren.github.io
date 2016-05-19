@@ -1,6 +1,6 @@
 /// <reference path="google.maps.d.ts" />
 
-function paintRectanglesTS(map:google.maps.Map,
+function paintRectangles(map:google.maps.Map,
                 latinc:number, longinc:number,
                         initial:google.maps.LatLng,
                         latCount:number, longCount:number){
@@ -23,3 +23,25 @@ function paintRectanglesTS(map:google.maps.Map,
         }
     }        
 }    
+
+function initMap(center:google.maps.LatLng) {
+    var map = new google.maps.Map(document.getElementById('map'), {
+        zoom: 16,
+        center: center,
+        mapTypeId: google.maps.MapTypeId.ROADMAP
+    });
+    const latinc = 1/1000;
+    const longinc = 1/500;
+
+    const initialLat = 55.70;
+    const initialLong = 12.54;
+    const initial = new google.maps.LatLng( 55.69, 12.54);
+    console.log(initial);
+
+    const latCount = 15;
+    const longCount = 10;
+
+    paintRectangles(map, latinc, longinc,
+                            initial,
+                            latCount, longCount);
+}
