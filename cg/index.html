@@ -15,48 +15,32 @@
       }
     </style>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBhSue4zv8hRliDUGQczp2NvYuXdRdeiYs"></script>
+    <script src="js/tsc.js"></script>
     <script>
       // Initialize the map and the custom overlay.
 
+      const nannasgade = {lat: 55.7011, lng: 12.5452}
+
       function initMap() {
         var map = new google.maps.Map(document.getElementById('map'), {
-          zoom: 1,
-//          center: {lat: 55.68, lng: 12.54},
-          center: {lat: 0, lng: 0},
+          zoom: 16,
+          center: nannasgade,
           mapTypeId: google.maps.MapTypeId.MAP
         });
+        const latinc = 1/1000;
+        const longinc = 1/500;
 
-        // The custom USGSOverlay object contains the USGS image,
-        // the bounds of the image, and a reference to the map.
+        const initialLat = 55.70;
+        const initialLong = 12.54;
+        const initial = new google.maps.LatLng( 55.69, 12.54);
+        console.log(initial);
 
-        const latinc = 1/2;
-        const longinc = 1;
+        const latCount = 15;
+        const longCount = 10;
 
-        const initialLat = 0;
-        const initialLong = 0;
-
-        for(var i = 0;i<170;i++){
-          for(var j = 0;j<20;j++){
-            var bounds = {
-              north: initialLat+(i*latinc),
-              west:  initialLong+(j*longinc),
-              south: initialLat+((i+1)*latinc),
-              east:  initialLong+((j+1)*longinc)
-            };
-            // transperant checkerboard
-//            var color = (i+j)%2 == 0? 'black':'white';
-            var color = '#'+Math.floor(Math.random()*16777215).toString(16);
-
-            // Define a rectangle and set its editable property to true.
-            var rectangle = new google.maps.Rectangle({
-              bounds: bounds,
-              fillColor: color,
-              strokeWeight : 0
-            //  editable: true
-            });
-            rectangle.setMap(map);
-          }
-        }
+        paintRectangles(map, latinc, longinc,
+                             initial,
+                             latCount, longCount);
       }
       google.maps.event.addDomListener(window, 'load', initMap);
     </script>
