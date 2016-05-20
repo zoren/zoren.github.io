@@ -43,21 +43,47 @@ function paintRectangle(map:google.maps.Map,
     rectangle.setMap(map);
 }
 
-function getNorthWest(bounds:google.maps.LatLngBounds) {
+function getNorthWest(bounds:google.maps.LatLngBounds) : google.maps.LatLng {
     return new google.maps.LatLng(bounds.getNorthEast().lat(), bounds.getSouthWest().lng());
 }
 
-function getSouthEast(bounds:google.maps.LatLngBounds) {
+function getSouthEast(bounds:google.maps.LatLngBounds) : google.maps.LatLng {
     return new google.maps.LatLng(bounds.getSouthWest().lat(), bounds.getNorthEast().lng());
+}
+
+function roundToThousand(d:number) : number {
+    return Math.round(d*1000)/1000;
+}
+
+function roundToThousandLatLng(d:google.maps.LatLng) : google.maps.LatLng {
+    return new google.maps.LatLng(roundToThousand(d.lat()), roundToThousand(d.lng()))
+}
+function Get(yourUrl:string){
+    var Httpreq = new XMLHttpRequest(); // a new request
+    Httpreq.open("GET",yourUrl,false);
+    Httpreq.send(null);
+    return Httpreq.responseText;          
+}
+function getDB(){
+    return [
+        {"pos": {"lat":55702,"lng":6272}, "color" : "red"}
+        ,{"pos": {"lat":55701,"lng":6271}, "color" : "blue"}
+        ,{"pos": {"lat":55701,"lng":6272}, "color" : "white"}
+        ,{"pos": {"lat":55701,"lng":6273}, "color" : "pink"}
+        ,{"pos": {"lat":55700,"lng":6272}, "color" : "green"}        
+    ]        
 }
 
 class ColorOverlayView extends google.maps.OverlayView {
     private div : HTMLDivElement = null
     private canvas : HTMLCanvasElement = null
     private ctx : CanvasRenderingContext2D = null
-    constructor(private bounds:google.maps.LatLngBounds,
-                private map:google.maps.Map){
+    constructor(private map:google.maps.Map){
         super()
+        let over = this
+        map.addListener('center_changed', function() {
+            over.draw()
+        });        
         this.setMap(map)
     }
     onAdd(){
@@ -71,10 +97,6 @@ class ColorOverlayView extends google.maps.OverlayView {
         canvas.style.height = '100%'
         
         var ctx = canvas.getContext("2d");
-//         ctx.fillStyle = 'black'
-//         ctx.fillRect(0, 0, 1, 1)
-//         ctx.fillRect(1, 1, 1, 1)
-// //        ctx.f
          div.appendChild(canvas); 
         
         this.div = div;
@@ -86,43 +108,47 @@ class ColorOverlayView extends google.maps.OverlayView {
     draw(){
         var overlayProjection = this.getProjection();
 
-        // Retrieve the south-west and north-east coordinates of this overlay
-        // in LatLngs and convert them to pixel coordinates.
-        // We'll use these coordinates to resize the div.
-        var sw = overlayProjection.fromLatLngToDivPixel(this.bounds.getSouthWest());
-        var ne = overlayProjection.fromLatLngToDivPixel(this.bounds.getNorthEast());
+        let mapBounds = this.map.getBounds()
+        // align bounds 
+        let bounds =
+            new google.maps.LatLngBounds(
+                roundToThousandLatLng(mapBounds.getSouthWest()),
+                roundToThousandLatLng(mapBounds.getNorthEast())
+            )
+        var sw = overlayProjection.fromLatLngToDivPixel(bounds.getSouthWest());
+        var ne = overlayProjection.fromLatLngToDivPixel(bounds.getNorthEast());
+        var nw = overlayProjection.fromLatLngToDivPixel(getNorthWest(bounds));
 
         let w = ne.x - sw.x
         let h = sw.y - ne.y
         let canvas = this.canvas
-        console.log(w)
-        console.log(h)
+
         canvas.width = w
         canvas.height = h
         let ctx = this.ctx
-        ctx.fillStyle = 'black'
 
         const latinc = 1/1000;
         const longinc = 1/500;
-        const latCount = 15;
-        const longCount = 10;
-        let initial = this.bounds.getSouthWest()
 
-        let initPoint = overlayProjection.fromLatLngToDivPixel(getNorthWest(this.bounds))
-        
-        for(var i = 0;i<latCount;i++){
-            for(var j = 0;j<longCount;j++){
-                var bounds =
-                    new google.maps.LatLngBounds(
-                        new google.maps.LatLng(initial.lat()+i*latinc, initial.lng()+j*longinc),
-                        new google.maps.LatLng(initial.lat()+((i+1)*latinc), initial.lng()+((j+1)*longinc)));
-                let nw = overlayProjection.fromLatLngToDivPixel(getNorthWest(bounds))
-                let se = overlayProjection.fromLatLngToDivPixel(getSouthEast(bounds))
-                ctx.globalAlpha = 0.5                        
-                ctx.fillStyle = '#'+Math.floor(Math.random()*16777215).toString(16)
-                ctx.fillRect(nw.x-initPoint.x, nw.y - initPoint.y, se.x - nw.x, se.y - nw.y)
+        let initial = getNorthWest(bounds)
+        let end = getSouthEast(bounds)
+        let initPoint = overlayProjection.fromLatLngToDivPixel(initial)
+
+        ctx.globalAlpha = 0.5
+        let db = getDB()
+        db.forEach((p) =>
+            {
+                ctx.fillStyle = p.color
+                let initial = new google.maps.LatLng(p.pos.lat * latinc, p.pos.lng * longinc)
+                let startBounds = new google.maps.LatLngBounds(initial, new google.maps.LatLng(initial.lat()+latinc, initial.lng()+longinc))
+                let startBoundsPixelNW = overlayProjection.fromLatLngToDivPixel(getNorthWest(startBounds))
+                let startBoundsPixelSE = overlayProjection.fromLatLngToDivPixel(getSouthEast(startBounds))
+                let w = startBoundsPixelSE.x - startBoundsPixelNW.x
+                let h = startBoundsPixelSE.y - startBoundsPixelNW.y                
+                ctx.fillRect(startBoundsPixelNW.x - nw.x, startBoundsPixelNW.y - nw.y,
+                             w, h)
             }
-        }
+        )
 
         // Resize the image's div to fit the indicated dimensions.
         var div = this.div;
@@ -141,9 +167,7 @@ function paintRectanglesCanvas(map:google.maps.Map,
                                 latinc:number, longinc:number,
                                 initial:google.maps.LatLng,
                                 latCount:number, longCount:number) {                                    
-    let ne = new google.maps.LatLng(initial.lat() + latinc * latCount, initial.lng() + longinc * longCount)
-    let bounds = new google.maps.LatLngBounds(initial, ne)
-    new ColorOverlayView(bounds, map)
+    new ColorOverlayView(map)
 }
 
 function initMap(center:google.maps.LatLng) {
@@ -158,8 +182,8 @@ function initMap(center:google.maps.LatLng) {
     const longCount = 10;
 
     const initial = new google.maps.LatLng( 55.69, 12.54);
-    console.log(initial);
-
+    // console.log(initial);
+    getDB()
 
     //paintRectangle
     paintRectanglesCanvas
